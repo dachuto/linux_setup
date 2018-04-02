@@ -1,0 +1,75 @@
+#!/usr/bin/env python3
+import argparse
+import csv
+import os
+import shlex
+import subprocess
+import sys
+
+import runner
+
+class Workspace:
+	def __init__(self, name, tabs):
+		self.name = name
+		self.tabs = tabs
+
+class Setup:
+	def __init__(self, history_dir, workspace):
+		self.history_dir = history_dir
+		self.workspace = workspace
+		self.workspace_history_dir = os.path.join(self.history_dir, workspace.name)
+		self.ensure_history_dir_exists()
+
+	def history_file_path(self, tab_name):
+		return os.path.join(self.workspace_history_dir, tab_name)
+
+	def ensure_history_dir_exists(self):
+		try:
+			os.makedirs(self.workspace_history_dir)
+		except FileExistsError:
+			pass
+
+	def inner_bash_commnad(self, tab_dir, tab_histfile, tab_name):
+		it = map(shlex.quote, [tab_dir, tab_histfile, tab_name])
+		return "WORKSPACE_TAB_DIR={} WORKSPACE_TAB_HISTFILE={} WORKSPACE_TAB_TITLE={} exec bash".format(*it)
+
+	def launch_command(self):
+		command = ["gnome-terminal"]
+		for tab_name, tab_dir in self.workspace.tabs.items():
+			# this is workaround gnome-terminal accepting only one command as param
+			history_file = self.history_file_path(tab_name)
+			inner = self.inner_bash_commnad(tab_dir, history_file, tab_name)
+			outer = "bash -c " + shlex.quote(inner)
+			command += ["--tab", "--command", outer]
+		return command
+
+if __name__ == "__main__":
+	how_csv_looks = "<tab_name, tab_directory>"
+	d = (
+		"Launches a terminal emulator with a particular tabs setup."
+		"Tabs are read from standard input as CSV. Each row should be in form: " + how_csv_looks + ".")
+	parser = argparse.ArgumentParser(description=d, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+	parser.add_argument("--dry_run", action="store_true")
+	parser.add_argument("workspace_name", type=str)
+	parser.add_argument("history_dir", default="~/history", help="where are histories collected (for all workspaces)", nargs="?", type=str)
+
+	args = parser.parse_args()
+
+	history_dir = os.path.expanduser(args.history_dir)
+
+	tabs = dict()
+	tabs_reader = csv.reader(sys.stdin)
+	for row in tabs_reader:
+		if len(row) != 2:
+			parser.print_help()
+			parser.error("Incorrect row form")
+		tabs[row[0]] = row[1]
+
+	workspace = Workspace(args.workspace_name, tabs)
+	setup = Setup(history_dir, workspace)
+	command = setup.launch_command()
+
+	if args.dry_run:
+		runner.echo(command)
+	else:
+		runner.run(command)
