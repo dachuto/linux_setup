@@ -1,0 +1,20 @@
+#!/usr/bin/env python3
+import argparse
+import shlex
+import subprocess
+import sys
+
+import runner
+
+if __name__ == "__main__":
+	parser = argparse.ArgumentParser(description="Sets local git user with the author of a commit.", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+	parser.add_argument("commit", default="HEAD", help="commit to use", nargs="?", type=str)
+	args = parser.parse_args()
+
+	prefix = ["git", "log", "-1", args.commit]
+
+	email = runner.run(prefix + ["--format=" + "%ae"])
+	name = runner.run(prefix + ["--format=" + "%an"])
+
+	runner.run(["git", "config", "user.email", email])
+	runner.run(["git", "config", "user.name", name])
