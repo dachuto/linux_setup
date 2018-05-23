@@ -45,7 +45,7 @@ PS1='\[${BOLD}\] \[${PS1_EXIT_COLOR}\]${PS1_EXIT_STATUS} \[${NICE_BLUE}\]${PS1_T
 PROMPT_COMMAND=__prompt_command
 PROMPT_COMMAND="${PROMPT_COMMAND}; history -a"
 
-export PATH="~/bin/:$PATH"
+export PATH="${HOME}/bin/:${PATH}"
 
 # easy setup for workspace launcher
 set_terminal_title() {
