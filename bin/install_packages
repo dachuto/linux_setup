@@ -11,8 +11,9 @@ if __name__ == "__main__":
 		"build-essential",
 		"cmake",
 		"gdb",
+		"gnome-terminal",
 		"git",
-		"screen",
+#		"screen",
 		"valgrind",
 		"vim",
 	]
